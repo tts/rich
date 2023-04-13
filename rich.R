@@ -93,6 +93,8 @@ stats <- forbes_countries_hdi %>%
   mutate(by_100K = round((billionaires / population) * 100000, digits = 3)) %>% 
   select(country, population, billionaires, by_100K, `life expectancy`)
 
+write.csv(stats, "stats.csv", row.names = FALSE)
+
 #-------------------
 # Interactive graph
 #-------------------
@@ -126,9 +128,9 @@ gg_point <-
     color = "#003580", curvature = -0.2) +
   scale_x_continuous(breaks = seq(from = 45, to = 90, by = 5)) +
   scale_y_continuous(breaks = seq(from = 0, to = 6, by = 1)) + 
-  labs(title = "Billionaries in 2023 by Forbes - the country perspective",
+  labs(title = "Billionaires in 2023 by Forbes - the country perspective",
        x = "Country's life expectancy at birth (years)",
-       y = "Billionaries in population of 100K",
+       y = "Billionaires in population of 100K",
        caption = "Data by Forbes, Wikidata, UN | Graph & code https://github.com/tts/rich") +
   scale_color_viridis_c(option = "magma", direction = -1, begin = 0.1, end = 0.85) + # 
   theme_minimal() +
