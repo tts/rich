@@ -1,6 +1,6 @@
 library(rvest)
 library(tidyverse)
-library(ggiraph)
+#library(ggiraph)
 
 #---------
 # Forbes
@@ -90,42 +90,47 @@ hdi <- hdi %>%
 forbes_countries_hdi <- left_join(forbes_countries, hdi)
 
 stats <- forbes_countries_hdi %>% 
-  mutate(by_100K = round((billionaires / population) * 100000, digits = 3))
+  mutate(by_100K = round((billionaires / population) * 100000, digits = 3)) %>% 
+  select(country, population, billionaires, by_100K, `life expectancy`)
 
 #-------------------
 # Interactive graph
 #-------------------
 
-# Coords of Finland
+# Arrow to Finland
 arrows <- 
   tibble(
     x1 = c(75),
-    x2 = c(82),
+    x2 = c(81.77),
     y1 = c(2), 
     y2 = c(0.2)
   )
 
 gg_point <- 
   ggplot(data = stats) +
-  geom_point_interactive(aes(x = `life expectancy`, y = by_100K, 
-                             color = billionaires, 
-                             tooltip = paste0("Country: ", country, 
-                                              "\nBillionaires #: ", billionaires,
-                                              "\nWithin 100K: ", sprintf("%.3f", by_100K),
-                                              "\nLife expectancy (years): ", `life expectancy`)),
-                         alpha = 1/2) +
-  annotate("text", x = 75, y = 2.2, label = "Finland") +
+  ggiraph::geom_jitter_interactive(aes(x = `life expectancy`, y = by_100K, 
+                              color = billionaires, 
+                              tooltip = paste0("Country: ", country, 
+                                               "\nLife expectancy (years): ", `life expectancy`,
+                                              "\nNumber of billionaires: ", billionaires,
+                                              "\nWithin 100K: ", sprintf("%.3f", by_100K))),
+                          width = 0.4, height = 0.02,
+                          alpha = 1/2) +
+  # https://stackoverflow.com/a/65077171
+  annotate("text", x = 60, y = 4, size = 8/.pt, label = "The darker the point,\n the more billionaires",
+           colour = "#9c9fb0") +
+  annotate("text", x = 75, y = 2.2, size = 8/.pt, label = "Finland", colour = "#003580") +
   geom_curve(
     data = arrows, aes(x = x1, y = y1, xend = x2, yend = y2),
     arrow = arrow(length = unit(0.08, "inch")), size = 0.2,
-    color = "gray20", curvature = -0.3) +
+    color = "#003580", curvature = -0.2) +
   scale_x_continuous(breaks = seq(from = 45, to = 90, by = 5)) +
-  scale_y_continuous(breaks = seq(from = 0, to = 6, by = 0.5)) +
-  labs(title = "Forbes 2023 billionaires - the country perspective",
-       x = "Life expectancy at birth (years)",
-       y = "Number # in population of 100K",
+  scale_y_continuous(breaks = seq(from = 0, to = 6, by = 1)) + 
+  labs(title = "Billionaries in 2023 by Forbes - the country perspective",
+       x = "Country's life expectancy at birth (years)",
+       y = "Billionaries in population of 100K",
        caption = "Data by Forbes, Wikidata, UN | Graph & code https://github.com/tts/rich") +
-  scale_fill_viridis_b() +
+  scale_color_viridis_c(option = "magma", direction = -1, begin = 0.1, end = 0.85) + # 
   theme_minimal() +
   theme(
     legend.position = "none",
@@ -134,14 +139,12 @@ gg_point <-
     axis.title.x = element_text(size = 6),
     axis.title.y = element_text(size = 6))
 
-p <- girafe(ggobj = gg_point)
-p <- girafe_options(p,
-                    opts_tooltip(opacity = .8,
-                                 offx = 20, offy = -10,
-                                 use_fill = TRUE, use_stroke = TRUE,
-                                 delay_mouseout = 1000) )
+# https://stackoverflow.com/a/72552743
+p <- ggiraph::girafe(ggobj = cowplot::plot_grid(gg_point, ncol = 1),
+                     width_svg = 8, height_svg = 4)
 
-# knitrOptions don't seem to have any effect
-htmlwidgets::saveWidget(p, file= "forbes.html", selfcontained = TRUE,
-                        knitrOptions = list(out.width = 500, out.height = 250))
+p <- ggiraph::girafe_options(p, ggiraph::opts_tooltip(opacity = .8, offx = 20, offy = -10,
+                                                      use_fill = TRUE, use_stroke = TRUE, delay_mouseout = 1000) )
 
+htmlwidgets::saveWidget(p, file= "forbes.html", selfcontained = TRUE, 
+                        title = "Billionaires in 2023 by Forbes - the country perspective")
