@@ -119,7 +119,7 @@ gg_point <-
                                                "\nGross national income (GNI) per capita: ", gni,
                                               "\nNumber of billionaires: ", billionaires,
                                               "\nWithin 100K: ", sprintf("%.3f", by_100K))),
-                          width = 0.6, height = 0.18,
+                          width = 0.6, height = 0.2,
                           alpha = 1/2) +
   # https://stackoverflow.com/a/65077171
   annotate("text", x = 27000, y = 4, size = 8/.pt, label = "The darker the point,\n the more billionaires",
@@ -130,7 +130,7 @@ gg_point <-
     arrow = arrow(length = unit(0.08, "inch")), size = 0.2,
   color = "#003580", curvature = -0.1) +
   scale_x_continuous(breaks = seq(from = 2000, to = 200000, by = 25000)) +
-  scale_y_continuous(breaks = seq(from = 0, to = 6, by = 1))  +
+  scale_y_continuous(breaks = seq(from = 1, to = 6, by = 1))  +
   labs(title = "Billionaires in 2023 by Forbes - the country perspective",
        x = "Gross national income (GNI) per capita (2017 PPP $)",
        y = "Billionaires in population of 100K",
