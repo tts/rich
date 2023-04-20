@@ -1,6 +1,5 @@
 library(rvest)
 library(tidyverse)
-#library(ggiraph)
 
 #---------
 # Forbes
@@ -61,12 +60,15 @@ forbes_countries <- left_join(forbes, wiki)
 #--------------------------------------------------------------
 
 hdi <- readxl::read_excel("HDR21-22_Statistical_Annex_HDI_Table.xlsx")
-hdi <- hdi[,c(2,5)]
+hdi <- hdi[,c(2,11)]
 hdi <- hdi[c(8:206),]
-names(hdi) <- c("country", "life expectancy")
+names(hdi) <- c("country", "gni")
+
 hdi <- hdi %>% 
-  filter(!is.na(`life expectancy`)) %>% 
-  mutate(`life expectancy` = as.double(`life expectancy`))
+  filter(!is.na(gni),
+         gni != "..") %>% 
+  mutate(gni = as.numeric(gni),
+         gni = ceiling(gni))
 
 # Make some names to match
 hdi$country[hdi$country == "China"] <- "People's Republic of China"
@@ -79,19 +81,20 @@ hdi$country[hdi$country == "Czechia"] <- "Czech Republic"
 hdi$country[hdi$country == "Viet Nam"] <- "Vietnam"
 hdi$country[hdi$country == "Tanzania (United Republic of)"] <- "Tanzania"
 hdi$country[hdi$country == "Venezuela (Bolivarian Republic of)"] <- "Venezuela"
+hdi$country[hdi$country == "Türkiye"] <- "Turkey"
 
 # Manually adding few missing ones
 hdi <- hdi %>% 
-  add_row(country = "Taiwan", `life expectancy` = 81.04) %>% # https://www.macrotrends.net/countries/TWN/taiwan/life-expectancy
-  add_row(country = "Turkey", `life expectancy` = 78.45) %>% # https://www.macrotrends.net/countries/TWN/turkey/life-expectancy
-  add_row(country = "Guernsey", `life expectancy` = 82.6) %>% # https://guernseypress.com/news/2018/04/12/guernsey-in-top-10-for-life-expectancy/
-  add_row(country = "Macau", `life expectancy` = 85) # https://data.worldbank.org/indicator/SP.DYN.LE00.IN?locations=MO
+  add_row(country = "Taiwan", gni = 34756) %>% # 2021 https://www.taipeitimes.com/News/biz/archives/2023/03/08/2003795675
+  add_row(country = "Guernsey", gni = 66220) %>% # 2007 Channel Islands https://en.wikipedia.org/wiki/List_of_countries_by_GNI_(nominal)_per_capita
+  add_row(country = "Macau", gni = 46730) %>% # 2020 https://en.wikipedia.org/wiki/List_of_countries_by_GNI_(nominal)_per_capita
+  add_row(country = "Monaco", gni = 186080) # 2008 https://www.destatis.de/EN/Themes/Countries-Regions/International-Statistics/Data-Topic/Tables/BasicData_GNI.html
 
 forbes_countries_hdi <- left_join(forbes_countries, hdi)
 
 stats <- forbes_countries_hdi %>% 
   mutate(by_100K = round((billionaires / population) * 100000, digits = 3)) %>% 
-  select(country, population, billionaires, by_100K, `life expectancy`)
+  select(country, population, billionaires, by_100K, gni)
 
 write.csv(stats, "stats.csv", row.names = FALSE)
 
@@ -102,34 +105,34 @@ write.csv(stats, "stats.csv", row.names = FALSE)
 # Arrow to Finland
 arrows <- 
   tibble(
-    x1 = c(75),
-    x2 = c(81.77),
+    x1 = c(49600),
+    x2 = c(49640),
     y1 = c(2), 
-    y2 = c(0.2)
+    y2 = c(0.5)
   )
 
 gg_point <- 
   ggplot(data = stats) +
-  ggiraph::geom_jitter_interactive(aes(x = `life expectancy`, y = by_100K, 
+  ggiraph::geom_jitter_interactive(aes(x = gni, y = by_100K, 
                               color = billionaires, 
                               tooltip = paste0("Country: ", country, 
-                                               "\nLife expectancy (years): ", `life expectancy`,
+                                               "\nGross national income (GNI) per capita: ", gni,
                                               "\nNumber of billionaires: ", billionaires,
                                               "\nWithin 100K: ", sprintf("%.3f", by_100K))),
-                          width = 0.4, height = 0.02,
+                          width = 0.6, height = 0.18,
                           alpha = 1/2) +
   # https://stackoverflow.com/a/65077171
-  annotate("text", x = 60, y = 4, size = 8/.pt, label = "The darker the point,\n the more billionaires",
+  annotate("text", x = 27000, y = 4, size = 8/.pt, label = "The darker the point,\n the more billionaires",
            colour = "#9c9fb0") +
-  annotate("text", x = 75, y = 2.2, size = 8/.pt, label = "Finland", colour = "#003580") +
+  annotate("text", x = 49600, y = 2.2, size = 8/.pt, label = "Finland", colour = "#003580") +
   geom_curve(
     data = arrows, aes(x = x1, y = y1, xend = x2, yend = y2),
     arrow = arrow(length = unit(0.08, "inch")), size = 0.2,
-    color = "#003580", curvature = -0.2) +
-  scale_x_continuous(breaks = seq(from = 45, to = 90, by = 5)) +
-  scale_y_continuous(breaks = seq(from = 0, to = 6, by = 1)) + 
+  color = "#003580", curvature = -0.1) +
+  scale_x_continuous(breaks = seq(from = 2000, to = 200000, by = 25000)) +
+  scale_y_continuous(breaks = seq(from = 0, to = 6, by = 1))  +
   labs(title = "Billionaires in 2023 by Forbes - the country perspective",
-       x = "Country's life expectancy at birth (years)",
+       x = "Gross national income (GNI) per capita (2017 PPP $)",
        y = "Billionaires in population of 100K",
        caption = "Data by Forbes, Wikidata, UN | Graph & code https://github.com/tts/rich") +
   scale_color_viridis_c(option = "magma", direction = -1, begin = 0.1, end = 0.85) + # 
