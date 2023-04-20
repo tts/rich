@@ -55,7 +55,7 @@ forbes$country[forbes$country == "St. Kitts and Nevis"] <- "Saint Kitts and Nevi
 forbes_countries <- left_join(forbes, wiki)
 
 #--------------------------------------------------------------
-# Human Development Index: Life expectancy at birth
+# Human Development Index: Gross National Income
 # https://hdr.undp.org/data-center/documentation-and-downloads
 #--------------------------------------------------------------
 
